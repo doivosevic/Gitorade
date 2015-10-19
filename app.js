@@ -19,7 +19,7 @@ app.get('/', function(req, res, next){
 });
 
 
-app.use('/git', function(req, res){
+app.post('/git', function(req, res){
 	console.log('/git');
 	console.log(req.body);
 	var usefulData = {
