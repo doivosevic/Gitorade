@@ -14,13 +14,18 @@ app.get('/', function(req, res, next){
 		console.log('Server on. Testing in progress\n' +
 					'This should only display when testing.\n' +
 					'Report issue if else!');
-		res.render('Testing in progress. Hi :)');
+		res.send('Testing in progress. Hi :)');
 	}
 });
 
 
 app.use('/git', function(req, res){
-	console.log(req);
+	console.log('/git');
+	console.log(req.body);
+	var usefulData = {
+		
+	}
+	res.status(202).send('Hook accepted :)');
 });
 
 module.exports = app;
