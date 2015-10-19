@@ -3,14 +3,17 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 var crypto = require('crypto');
 
+// Initialize hmac crypto for checking webhook auth
+var hmac = crypto.createHmac('sha1', process.env.GITSECRET || "testsecret");
 
-
+// Initialize express server
 var app = express();
 var config = fs.readFileSync('./gitorade.config', 'utf8');
 console.log(config);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false}));
 
+// Handle default request
 app.get('/', function(req, res, next){
 	console.log(app.testing);
 	if (app.testing === true) {
@@ -21,7 +24,7 @@ app.get('/', function(req, res, next){
 	}
 });
 
-
+// Handle github webhook request
 app.post('/git', function(req, res){
 	console.log('/git');
 	console.log(req.body);
