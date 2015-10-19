@@ -14,11 +14,12 @@ app.get('/', function(req, res, next){
 		console.log('Server on. Testing in progress\n' +
 					'This should only display when testing.\n' +
 					'Report issue if else!');
+		res.render('Testing in progress. Hi :)');
 	}
 });
 
 
-app.post('/git/update', function(req, res){
+app.use('/git/update', function(req, res){
 	console.log(req);
 });
 
