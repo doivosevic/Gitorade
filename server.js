@@ -1,7 +1,6 @@
 var express = require('express');
 var app = require('./app');
 var http = require('http');
-var debug = require('debug');
 
 app.testing = true;
 
@@ -49,5 +48,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  console.log('Listening on ' + bind);
 }
