@@ -6,7 +6,8 @@ var debug = require('debug');
 app.testing = true;
 
 var server = http.createServer(app);
-server.listen(5001);
+var port = normalizePort(process.env.PORT || '5001');
+server.listen(port);
 
 server.on('error', onError);
 server.on('listening', onListening);
