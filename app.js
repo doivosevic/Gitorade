@@ -34,7 +34,7 @@ app.post('/git', function(req, res){
 	//// CHECKING WEBHOOK SECRET
 	// CALCULATING FROM PAYLOAD AND LOCAL SECRET
 	var payload = req.body;
-	hmac.update(JSON.stringify(payload));
+	hmac.update(payload);
 	var sha1LocalSecret = 'sha1=' + hmac.digest('hex');
 	// GETTING REMOTE SECRET
 	var sha1RemoteSecret = req.headers['x-hub-signature'];
