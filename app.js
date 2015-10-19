@@ -19,7 +19,7 @@ app.get('/', function(req, res, next){
 });
 
 
-app.use('/git/update', function(req, res){
+app.use('/git', function(req, res){
 	console.log(req);
 });
 
