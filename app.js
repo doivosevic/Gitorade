@@ -26,6 +26,10 @@ app.get('/', function(req, res, next){
 app.post('/git', function(req, res){
 	console.log('/git');
 	console.log(req.body);
+	console.log('\n\nand now header\n\n');
+	console.log(req.header);
+	console.log('\n\nand now header\n\n');
+	console.log(req);
 	var usefulData = {
 		
 	}
