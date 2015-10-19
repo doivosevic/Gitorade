@@ -10,7 +10,7 @@ var config = fs.readFileSync('./gitorade.config', 'utf8');
 console.log(config);
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlEncoded({ extended: false}));
+app.use(bodyParser.urlencoded({ extended: false}));
 
 app.get('/', function(req, res, next){
 	console.log(app.testing);
