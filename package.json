@@ -11,7 +11,8 @@
     "url": "git+https://github.com/DominikDitoIvosevic/Gitorade.git"
   },
   "dependencies": {
-    "express": "*"
+    "express": "*",
+    "body-parser": "*"
   },
   "keywords": [
     "git",
