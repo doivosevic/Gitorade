@@ -4,6 +4,7 @@ var fs = require('fs');
 var crypto = require('crypto');
 
 // Initialize hmac crypto for checking webhook auth
+console.log(process.env.GITSECRET);
 var hmac = crypto.createHmac('sha1', process.env.GITSECRET || "testsecret");
 
 // Initialize express server
@@ -34,7 +35,7 @@ app.post('/git', function(req, res){
 	//// CHECKING WEBHOOK SECRET
 	// CALCULATING FROM PAYLOAD AND LOCAL SECRET
 	var payload = req.body;
-	hmac.update(payload);
+	hmac.update(JSON.stringify(payload), 'utf-8');
 	var sha1LocalSecret = 'sha1=' + hmac.digest('hex');
 	// GETTING REMOTE SECRET
 	var sha1RemoteSecret = req.headers['x-hub-signature'];
