@@ -5,7 +5,7 @@ var http = require('http');
 app.testing = true;
 
 var server = http.createServer(app);
-var port = process.env.PORT || '5001';
+var port = process.env.PORT || '80';
 server.listen(port);
 
 server.on('error', onError);
