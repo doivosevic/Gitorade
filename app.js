@@ -9,8 +9,12 @@ var crypto = require('crypto');
 // For executing shell script.
 var exec = require('child_process').exec;
 
+function filelog(text) {
+	fs.appendFileSync('/home/git/Gitorade/log.txt', text + '\n');
+}
+
 // Parse config file
-var config = JSON.parse(fs.readFileSync('./gitorade.config', 'utf8'));
+var config = JSON.parse(fs.readFileSync('/home/git/Gitorade/gitorade.config', 'utf8'));
 console.log(config);
 
 // Initialize hmac crypto for checking webhook auth
@@ -34,7 +38,8 @@ app.get('/', function(req, res, next){
 });
 
 var pid = process.pid;
-fs.appendFileSync('log.txt', 'New PID is: ' + pid + '\n');
+filelog('New PID is: ' + pid);
+filelog('Secret is: ' + (process.env.GITSECRET || config.gitsecret || "testsecret"));
 
 // Handle github webhook request
 app.post('/git', function(req, res){
@@ -45,36 +50,45 @@ app.post('/git', function(req, res){
 
 	var cwd = process.cwd();
 
-	fs.appendFileSync('log.txt', 'PID was: ' + pid + '\n');
+	filelog('----------------------\n' + 
+		'New push\n' +
+		'RepoName is: ' + commitData.repoName);
 
 	console.log(pid);
 	console.log(cwd);
 	console.log(commitData);
 
-	options = {
+	/*options = {
 		env: {
 			'PID': pid,
 			'REPONAME': commitData.repoName
 		}
-	}
-	exec('git pull', 
-		{cwd:('/home/git/'+commitData.repoName)},
+	}*/
+
+	exec('git -C /home/git/' + commitData.repoName + ' pull', 
+		{cwd:('/home/git/' + commitData.repoName)},
 		function(err, stdout, stderr){
-			fs.appendFileSync('log.txt', 'Git pull stdout is: ' + stdout + '\n');
-			fs.appendFileSync('log.txt', 'Git pull stderr is: ' + stderr + '\n');
+			filelog('Git pull stdout is: ' + stdout);
+			filelog('Git pull stderr is: ' + stderr);
 			if (err !== null) {
-				fs.appendFileSync('log.txt', 'Git pull err is: ' + err + '\n');
+				filelog('Git pull err is: ' + err);
 			}
-		});
-	exec('kill ' + pid + ';screen -d -m nodejs server.js', 
-		{cwd:'/home/git/Gitorade'},
-		function(err, stdout, stderr){
-			fs.appendFileSync('log.txt', 'Kill+screen pull stdout is: ' + stdout + '\n');
-			fs.appendFileSync('log.txt', 'Kill+screen pull stderr is: ' + stderr + '\n');
-			if (err !== null) {
-				fs.appendFileSync('log.txt', 'Kill+screen pull err is: ' + err + '\n');
+			if (true) {
+				filelog('PID was: ' + pid);
+				exec('kill ' + pid + ';screen -d -m nodejs server.js', 
+					{cwd:'/home/git/Gitorade'},
+					function(err, stdout, stderr){
+						filelog('Kill+screen pull stdout is: ' + stdout);
+						filelog('Kill+screen pull stderr is: ' + stderr);
+						if (err !== null) {
+							filelog('Kill+screen pull err is: ' + err);
+						}
+				});
 			}
-		});
+	});
+
+	
+		
 
 	/*exec('sh magic.sh', options, function(err, stdout, stderr) {
 		console.log('stdout:' + stdout);
@@ -103,7 +117,6 @@ function authPayloadAndExtract(payload, hmac, xHubSig, res) {
 	if (sha1RemoteSecret === sha1LocalSecret) {
 		// Data to be used for later actions
 		var usefulData = {
-			'multipleCommits': (payload.commits.length !== 1),
 			'commitMessage': payload.head_commit.message,
 			'commitTimestamp': payload.head_commit.timestamp,
 			'commiterUsername': payload.head_commit.committer.username,
