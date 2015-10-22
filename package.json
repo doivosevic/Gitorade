@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "express": "*",
-    "body-parser": "*"
+    "body-parser": "*",
+    "vhost": "~3.0.2",
+    "grunt": "~0.4.5"
   },
   "keywords": [
     "git",

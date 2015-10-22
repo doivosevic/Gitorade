@@ -1,8 +1,38 @@
 var express = require('express');
-var app = require('./app');
 var http = require('http');
+var vhost = require('vhost');
+var fs = require('fs');
 
-app.testing = true;
+// Parse config file
+var configLocation = JSON.parse(fs.readFileSync('/home/git/Gitorade/gitorade.location', 'utf8'));
+var config = JSON.parse(fs.readFileSync(configLocation.location, 'utf8'));
+console.log(config);
+
+var gitapp = require(config.gitoradeAppLocation);
+
+//var ditoninjaapp = require('../dito.ninja/app');
+
+var app = express();
+
+app.use(function(req, res, next) {
+  console.log(req.headers.host);
+  next();
+});
+
+app.use(vhost('git.dito.ninja', gitapp));
+
+var whitelistedApps = [];
+for (var i = 0; i < config.whitelistedRepos.length; ++i) {
+  console.log('A repo');
+  console.log(config.gitReposDirectory + config.whitelistedRepos[i])
+  console.log(config.whitelistedRepos[i]);
+  whitelistedApps[i] = require(config.gitReposDirectory + config.whitelistedRepos[i] + '/app');
+  app.use(vhost(config.whitelistedRepos[i], whitelistedApps[i]));
+}
+
+//app.use(vhost('dito.ninja', ditoninjaapp));
+
+// gitapp.testing = true;
 
 var server = http.createServer(app);
 var port = process.env.PORT || '80';

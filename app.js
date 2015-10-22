@@ -10,12 +10,17 @@ var crypto = require('crypto');
 var exec = require('child_process').exec;
 
 function filelog(text) {
-	fs.appendFileSync('/home/git/Gitorade/log.txt', text + '\n');
+	console.log(text);
+	console.log(gitoradeLogLocation);
+	fs.appendFileSync(gitoradeLogLocation, text + '\n');
 }
 
 // Parse config file
-var config = JSON.parse(fs.readFileSync('/home/git/Gitorade/gitorade.config', 'utf8'));
+var configLocation = JSON.parse(fs.readFileSync('/home/git/Gitorade/gitorade.location', 'utf8'));
+var config = JSON.parse(fs.readFileSync(configLocation.location, 'utf8'));
 console.log(config);
+
+var gitoradeLogLocation = config.gitoradeLogLocation;
 
 // Initialize hmac crypto for checking webhook auth
 console.log(process.env.GITSECRET);
@@ -26,29 +31,37 @@ var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false}));
 
-// Handle default request
-app.get('/', function(req, res, next){
-	console.log(app.testing);
-	if (app.testing === true) {
-		console.log('Server on. Testing in progress\n' +
-					'This should only display when testing.\n' +
-					'Report issue if else!');
-		res.send('Testing in progress. Hi :)');
-	}
-});
+// OBSOLETE: Get current working directory
+var cwd = process.cwd();
 
 var pid = process.pid;
 filelog('New PID is: ' + pid);
 filelog('Secret is: ' + (process.env.GITSECRET || config.gitsecret || "testsecret"));
 
+app.use(function(req, res, next) {
+	console.log('git.dito.ninja!!');
+	console.log(req.url);
+
+	// Checking whether the request is push notification from github
+	if (req.headers['x-github-event'] !== 'push') {
+		filelog('----------------------\n' + 
+			'A request which is not a push notif from github was received');
+		res.send('This is a misplaced request. Check url again.');
+		return;
+	}
+
+	next();
+})
+
 // Handle github webhook request
-app.post('/git', function(req, res){
-	console.log('/git');
+app.post('/', function(req, res){
+	console.log('git.dito.ninja');
+
 	//console.log(req.body);
 	var xHubSig = req.headers['x-hub-signature'];
-	commitData = authPayloadAndExtract(req.body, hmac, xHubSig, res);
 
-	var cwd = process.cwd();
+	// Validate secret and extract info from payload
+	commitData = authPayloadAndExtract(req.body, hmac, xHubSig, res);
 
 	filelog('----------------------\n' + 
 		'New push\n' +
@@ -58,53 +71,36 @@ app.post('/git', function(req, res){
 	console.log(cwd);
 	console.log(commitData);
 
-	/*options = {
-		env: {
-			'PID': pid,
-			'REPONAME': commitData.repoName
-		}
-	}*/
+	// Bind parameters so that the function can be used as callback
+	var bindedRestartNodejs = restartNodejs.bind(this, pid, config.gitoradeServerLocation);
 
-	exec('git -C /home/git/' + commitData.repoName + ' pull', 
-		{cwd:('/home/git/' + commitData.repoName)},
+	gitPullCommand(config.gitReposDirectory, commitData.repoName, bindedRestartNodejs);
+});
+
+function gitPullCommand(gitReposDirectory, repoName, callback) {
+	exec('git -C ' + gitReposDirectory + repoName + ' pull',
 		function(err, stdout, stderr){
+			// Logging exec streams
 			filelog('Git pull stdout is: ' + stdout);
 			filelog('Git pull stderr is: ' + stderr);
 			if (err !== null) {
 				filelog('Git pull err is: ' + err);
 			}
-			if (true) {
-				filelog('PID was: ' + pid);
-				exec('kill ' + pid + ';screen -d -m nodejs server.js', 
-					{cwd:'/home/git/Gitorade'},
-					function(err, stdout, stderr){
-						filelog('Kill+screen pull stdout is: ' + stdout);
-						filelog('Kill+screen pull stderr is: ' + stderr);
-						if (err !== null) {
-							filelog('Kill+screen pull err is: ' + err);
-						}
-				});
+			callback();
+	});
+}
+
+function restartNodejs(pid, serverjsLocation) {
+	filelog('PID was: ' + pid);
+	exec('kill ' + pid + ';screen -d -m nodejs ' + serverjsLocation,
+		function(err, stdout, stderr){
+			filelog('Kill+screen pull stdout is: ' + stdout);
+			filelog('Kill+screen pull stderr is: ' + stderr);
+			if (err !== null) {
+				filelog('Kill+screen pull err is: ' + err);
 			}
 	});
-
-	
-		
-
-	/*exec('sh magic.sh', options, function(err, stdout, stderr) {
-		console.log('stdout:' + stdout);
-		console.log('stderr:' + stderr);
-	    if (err !== null) {
-	      console.log('exec error: ' + err);
-	    }
-	});*/
-
-	/*
-		position "cd cwd && cd .."
-		kill this server "kill pid"
-		git pull updated repo "cd 'repoName' && git pull"
-		restart server "cd .. && PORT=80 GITSECRET=q nodejs server.js"
-	*/
-});
+}
 
 function authPayloadAndExtract(payload, hmac, xHubSig, res) {
 	//// Checking payload secret
@@ -114,26 +110,29 @@ function authPayloadAndExtract(payload, hmac, xHubSig, res) {
 	// Extracting remote secret
 	var sha1RemoteSecret = xHubSig;
 
+	// Data to be used for later actions
+	var usefulData = {
+		'validSecred': sha1RemoteSecret === sha1LocalSecret,
+		'commitMessage': payload.head_commit.message,
+		'commitTimestamp': payload.head_commit.timestamp,
+		'commiterUsername': payload.head_commit.committer.username,
+		'commiterEmail': payload.head_commit.committer.email,
+		'repoName': payload.repository.name,
+		'repoFullname': payload.repository.fullname
+	}
+
 	if (sha1RemoteSecret === sha1LocalSecret) {
-		// Data to be used for later actions
-		var usefulData = {
-			'commitMessage': payload.head_commit.message,
-			'commitTimestamp': payload.head_commit.timestamp,
-			'commiterUsername': payload.head_commit.committer.username,
-			'commiterEmail': payload.head_commit.committer.email,
-			'repoName': payload.repository.name,
-			'repoFullname': payload.repository.fullname
-		}
+		console.log("Valid secret :)");
 		// Responding to github that the secret is ok.
 		res.status(202).send('Secret ok. Hook accepted :)');
-		return usefulData;
 	}
 	else {
 		console.log("Wrong secret. Ignoring commit!");
 		// Responding to github that the secret is not ok.
 		res.status(400).send('Wrong secret!! :(');
-		return null;
 	}
+
+	return usefulData;
 }
 
 module.exports = app;
