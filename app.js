@@ -92,6 +92,7 @@ function gitPullCommand(gitReposDirectory, repoName, callback) {
 
 function restartNodejs(pid, serverjsLocation) {
 	filelog('PID was: ' + pid);
+	console.log(serverjsLocation);
 	exec('kill ' + pid + ';screen -d -m nodejs ' + serverjsLocation,
 		function(err, stdout, stderr){
 			filelog('Kill+screen pull stdout is: ' + stdout);
